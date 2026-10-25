@@ -1,0 +1,30 @@
+# Illustrative systemd unit for a memory-capped, non-root agent control plane.
+# Values reflect what was measured on a ~4 GB box; tune for yours.
+[Unit]
+Description=Agent control plane (persistent, memory-capped)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=<SERVICE_USER>
+WorkingDirectory=/home/<SERVICE_USER>/<APP_DIR>
+ExecStart=/usr/bin/node <PATH_TO_CACHED_BUILD>/server.js
+Restart=on-failure
+RestartSec=30
+StartLimitIntervalSec=600
+StartLimitBurst=3
+TimeoutStopSec=120
+
+# Cap with cgroups. Never kill the app from a load/memory watcher.
+MemoryHigh=1100M
+MemoryMax=1400M
+MemorySwapMax=2G
+# Make the kernel prefer this service over the chat gateway if memory runs out.
+OOMScoreAdjust=200
+
+# The agents run shell commands, so limit what the service can do.
+NoNewPrivileges=yes
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

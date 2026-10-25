@@ -1,0 +1,20 @@
+# Secrets and local config
+.env
+.env.*
+*.key
+*.pem
+*-key.txt
+*.credentials
+secrets/
+
+# Working files and backups
+*.bak
+*.bak-*
+*.log
+__pycache__/
+*.pyc
+node_modules/
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

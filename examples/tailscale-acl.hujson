@@ -1,0 +1,41 @@
+// Sanitized Tailscale ACL: restrict one unauthenticated web UI to personal devices.
+//
+// Key facts that shape the structure:
+//  - Tailscale ACLs have no "deny". Access is the UNION of matching accept rules,
+//    and a tailnet with no `acls` section allows everything.
+//  - So you cannot add a narrow rule on top of a catch-all. Split the catch-all
+//    so that only rule 1 covers the protected port.
+//  - Side effect: a NEW device gets no access until it is listed.
+//
+// Before applying: copy the current policy somewhere safe; merge, do not overwrite, if you
+// already use groups, tags, grants or ssh rules; make the editor's Tests pass.
+{
+  "acls": [
+    // 1. The UI (HTTPS 443 on the server): personal devices only.
+    {
+      "action": "accept",
+      "src": ["<DEVICE_1_IP>", "<DEVICE_2_IP>", "<DEVICE_3_IP>"],
+      "dst": ["<SERVER_TAILNET_IP>:443"]
+    },
+    // 2. Every OTHER port on the server: unchanged, open to the tailnet.
+    {
+      "action": "accept",
+      "src": ["*"],
+      "dst": ["<SERVER_TAILNET_IP>:1-442,444-65535"]
+    },
+    // 3. Everything else: unchanged.
+    {
+      "action": "accept",
+      "src": ["*"],
+      "dst": ["<DEVICE_1_IP>:*", "<DEVICE_2_IP>:*", "<DEVICE_3_IP>:*"]
+    }
+  ],
+
+  "tests": [
+    { "src": "<DEVICE_1_IP>", "accept": ["<SERVER_TAILNET_IP>:443"] },
+    // An unlisted address stands in for a future device.
+    { "src": "<UNLISTED_IP>", "deny": ["<SERVER_TAILNET_IP>:443"] },
+    // Admin SSH still works.
+    { "src": "<DEVICE_1_IP>", "accept": ["<SERVER_TAILNET_IP>:22"] }
+  ]
+}
